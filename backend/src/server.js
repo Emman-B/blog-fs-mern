@@ -5,14 +5,8 @@ const app = require('./app');
 const PORT = parseInt(process.env.SERVER_PORT);
 
 // database connection test
-const { Client } = require('pg');
-const dbTest = new Client({
-  host: process.env.POSTGRES_HOST,
-  port: process.env.POSTGRES_PORT,
-  database: process.env.POSTGRES_DB,
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
-});
+const { MongoClient } = require('mongodb')
+const client = new MongoClient(process.env.MONGODB_URL)
 
 // listen on the specified port
 app.listen(PORT, () => {
@@ -20,10 +14,10 @@ app.listen(PORT, () => {
 
   // test the database
   let connectionTestString = 'Database connection test ';
-  dbTest.connect()
+  client.connect()
     .then(() => {
       console.log(connectionTestString + 'succeeded.');
-      dbTest.end();
+      client.close();
     })
     .catch(() => {
       console.error(connectionTestString + 'failed.');

@@ -122,7 +122,7 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdatedBlogPost'
       summary: Updates an existing blogpost
-      
+
       responses:
         '200':
           description: The blog post with the updated information
@@ -156,7 +156,7 @@ paths:
           description: The blog post with the specified id and author was not found.
         '500':
           description: There was an unexpected error.
-      
+
 
   /v1/user:
     get:
@@ -170,10 +170,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-        
+
         '401':
           description: User may not be logged in
-    
+
     put:
       tags:
         - User Accounts
@@ -205,7 +205,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/NewUser'
-      
+
       responses:
         '201':
           description: A new user account has been made. Basic details are returned (username and email)
@@ -227,7 +227,7 @@ paths:
                 type: array
                 items:
                   type: string
-  
+
   /v1/user/login:
     post:
       tags:
@@ -247,7 +247,7 @@ paths:
                   type: string
                 password:
                   type: string
-      
+
       responses:
         '200':
           description: client has successfully logged in
@@ -257,10 +257,10 @@ paths:
                 oneOf:
                   - $ref: '#/components/schemas/User' # user details
                   - type: string # simple "you have logged in" message
-        
+
         '401':
           description: bad email or password
-  
+
   /v1/user/logout:
     delete:
       tags:
@@ -276,8 +276,8 @@ paths:
 
         '401':
           description: User may not be logged in
-              
-    
+
+
 
 # Components
 components:
@@ -298,8 +298,8 @@ components:
         - author
         - title
         - permissions
-        - publishdate
-        - updateddate
+        - publishDate
+        - updatedDate
         - content
 
       properties:
@@ -319,10 +319,10 @@ components:
             - pattern: 'unlisted'
             - pattern: 'private'
             - pattern: 'draft'
-        publishdate:
+        publishDate:
           type: string
           format: date-time
-        updateddate:
+        updatedDate:
           type: string
           format: date-time
         content:
@@ -333,7 +333,7 @@ components:
       required:
         - title
         - content
-      
+
       properties:
         title:
           type: string
@@ -372,7 +372,7 @@ components:
       required:
         - username
         - email
-      
+
       properties:
         username:
           type: string
@@ -387,7 +387,7 @@ components:
         - email
         - password
         - passwordConfirmation
-      
+
       properties:
         username:
           type: string
@@ -404,7 +404,7 @@ components:
           type: string
           minLength: 8
           maxLength: 64
-          
+
     # Schema for updating a user's existing information
     UpdateUser:
       type: object

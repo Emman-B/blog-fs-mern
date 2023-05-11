@@ -1,12 +1,10 @@
-const {Pool} = require('pg');
+const { MongoClient } = require('mongodb');
+const sanitize = require('mongo-sanitize');
+const { v4: uuidv4 } = require('uuid');
 
-const pool = new Pool({
-  host: process.env.POSTGRES_HOST,
-  port: process.env.POSTGRES_PORT,
-  database: process.env.POSTGRES_DB,
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
-});
+const client = new MongoClient(process.env.MONGODB_URL);
+const databaseName = process.env.MONGODB_DATABASE;
+const db = client.db(databaseName);
 
 /**
  * Retrieves a blogpost from the database using the UUID
@@ -14,24 +12,11 @@ const pool = new Pool({
  * @returns the blogpost queried from the database
  */
 async function selectOneBlogPost(blogpostID) {
-  // build the query
-  const query = {
-    text: 'SELECT * FROM blogposts WHERE id = $1',
-    values: [ blogpostID ],
-  };
+  // get blogpost by id from blogposts collection
+  const blogposts = db.collection('blogposts');
+  const result = await blogposts.findOne( { id: sanitize(blogpostID) } )
 
-  try {
-    // make the query and retrieve the rows
-    const {rows} = await pool.query(query);
-
-    if (rows.length === 1) {
-      return rows[0];
-    }
-  }
-  catch (err) {
-    // log any errors that come up
-    console.error(err);
-  }
+  return result;
 }
 
 /**
@@ -43,41 +28,34 @@ async function selectOneBlogPost(blogpostID) {
  * @returns the blog posts from the database
  */
 async function selectBlogPosts(currentUser, limit, page, specifiedAuthor) {
-  // create part of query that involves handling selecting by author
-  //  (the AND is needed since this will be prepended before the permission query)
-  const authorQuery = specifiedAuthor?`author = $2 AND `:`( $2 = NULL OR TRUE ) AND `;
+  // build query based on permissions
+  const publicPosts = { permissions: 'public' }; // always included
+  const usersPosts = currentUser?.username ? { permissions: 'users' } : null; // if not logged in, this is not included in query
+  const authorPosts = specifiedAuthor ? { author: specifiedAuthor } : {}; // if author is specified, filter to only show author's posts
+  const ownPosts = { $and: [ { author: currentUser?.username }, { permissions: { $in: ['drafts', 'unlisted', 'private'] } } ] };
 
-  // create the part of the query that involves permission-handling
-  const permissionQuery = `( permissions LIKE 'public'` +
-  ` OR ($1 LIKE '%' AND permissions LIKE 'users')` + // detects if a username was provided
-  ` OR (author = $1 AND (permissions SIMILAR TO 'drafts|unlisted|private')) )`;
+  const orQuery = [ publicPosts, ownPosts ]
+  if (usersPosts) orQuery.push(usersPosts);
 
-  // create the full query
   const query = {
-    text: `SELECT * FROM blogposts WHERE ` +
-      authorQuery + // for selecting posts with specified author
-      permissionQuery + // for handling permissions
-      ` ORDER BY updateddate DESC`,
-    values: [ currentUser?.username, specifiedAuthor ],
+    $and: [ authorPosts, {
+      $or: orQuery
+    }]
   };
 
-  // add a limit and page offset if provided
-  if (limit > 0 && page > 0) {
-      query.text += ` LIMIT $4 OFFSET $5;`;
-      query.values.push(limit);
-      query.values.push( (page - 1) * limit); // first page = 1
-  }
-
   try {
-    // make the database query and return the data
-    const {rows} = await pool.query(query);
-    return rows;
-  }
-  catch (err) {
-    // if any errors come up, log it and return an empty array
+    const blogposts = db.collection('blogposts');
+    const cursor = blogposts.find(query).sort({ updatedDate: -1 });
+    if (limit) {
+      cursor.limit(limit);
+    }
+
+    return await cursor.toArray();
+  } catch (err) {
     console.error(err);
     return [];
   }
+
 }
 
 /**
@@ -85,13 +63,14 @@ async function selectBlogPosts(currentUser, limit, page, specifiedAuthor) {
  * @param {object} newBlogPost New Blog Post to insert into the database
  * @return blog post that was inserted
  */
-async function insertNewBlogPost({author, title, permissions, publishdate, updateddate, content}) {
+async function insertNewBlogPost({author, title, permissions, publishDate, updatedDate, content}) {
+  /*
   // create the query for insertion, using the new blog post object
   const query = {
-    text: `INSERT INTO blogposts (author, title, permissions, publishdate, updateddate, content)` +
+    text: `INSERT INTO blogposts (author, title, permissions, publishDate, updatedDate, content)` +
       ` VALUES ($1, $2, $3, $4, $5, $6)` +
       ` RETURNING *`, // return the new blog post that was just created
-    values: [ author, title, permissions, publishdate, updateddate, content ],
+    values: [ author, title, permissions, publishDate, updatedDate, content ],
   };
 
   try {
@@ -102,6 +81,18 @@ async function insertNewBlogPost({author, title, permissions, publishdate, updat
     // log the error
     console.error(err);
   }
+  */
+  try {
+    const blogposts = db.collection('blogposts');
+    const newPost = { id: uuidv4(), author, title, permissions, publishDate, updatedDate, content };
+
+    const result = await blogposts.insertOne(newPost);
+    console.log(`Inserted new blogpost with ID: ${newPost['id']}, _ID: ${result.insertedId}`);
+    return newPost;
+  } catch (err) {
+    // log the error
+    console.error(err)
+  }
 }
 
 /**
@@ -110,13 +101,14 @@ async function insertNewBlogPost({author, title, permissions, publishdate, updat
  * @return the blog post that was updated
  */
 async function updateExistingBlogPost(updatedBlogPost) {
-  const {id, title, permissions, updateddate, content} = updatedBlogPost;
+  const {id, title, permissions, updatedDate, content} = updatedBlogPost;
+  /*
   // create the query that makes use of the existing blog post UUID
   const query = {
-    text: `UPDATE blogposts SET title = $2, permissions = $3, updateddate = $4, content = $5` +
+    text: `UPDATE blogposts SET title = $2, permissions = $3, updatedDate = $4, content = $5` +
       ` WHERE id = $1` +
       ` RETURNING *;`,
-    values: [ id, title, permissions, updateddate, content ],
+    values: [ id, title, permissions, updatedDate, content ],
   }
 
   try {
@@ -125,6 +117,18 @@ async function updateExistingBlogPost(updatedBlogPost) {
     return rows[0];
   }
   catch (err) {
+    console.error(err);
+  }
+  */
+
+  try {
+    const blogposts = db.collection('blogposts');
+    const filter = { id };
+    const updatedFields = { title, permissions, updatedDate, content };
+
+    await blogposts.updateOne(filter, updatedFields);
+    return updatedBlogPost;
+  } catch (err) {
     console.error(err);
   }
 }
@@ -136,6 +140,7 @@ async function updateExistingBlogPost(updatedBlogPost) {
  * @returns true if deletion succeeded, false if deletion failed, undefined if an error occurred
  */
 async function deleteBlogPost(id, username) {
+  /*
   // shared condition for selecting and deleting
   const condition = `WHERE id = $1 AND LOWER(author) = LOWER($2)`;
   // make the query to find the blog post before deletion
@@ -164,6 +169,21 @@ async function deleteBlogPost(id, username) {
     console.error(err);
     return undefined;
   }
+  */
+
+  try {
+    const blogposts = db.collection('blogposts');
+    const query = { id, author: { $regex: new RegExp(username, 'i') } };
+
+    const result = await blogposts.deleteOne(query);
+    if (result.deletedCount > 0) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 /**
@@ -175,6 +195,7 @@ async function deleteBlogPost(id, username) {
  * it indicates if either the email or username has been taken
  */
 async function verifyEmailAndUsernameAreUnique(email, username) {
+  /*
   // create the query which checks the email and username columns
   const query = {
     text: `SELECT * FROM users WHERE LOWER(email) LIKE LOWER($1) OR LOWER(username) LIKE LOWER($2)`,
@@ -202,6 +223,32 @@ async function verifyEmailAndUsernameAreUnique(email, username) {
   catch (err) {
     console.error(err);
   }
+  */
+  try {
+    const users = db.collection('users');
+    const query = { $or: [ { email: { $regex: new RegExp(email, 'i') } }, { username: { $regex: new RegExp(username, 'i') } } ] };
+
+    if (await users.countDocuments(query) === 0) {
+      return { unique: true };
+    }
+
+    const cursor = users.find(query);
+
+    const result = {};
+
+    for await (const user of cursor) {
+      if (user.email.toLocaleLowerCase() === email.toLocaleLowerCase()) {
+        result.email = true;
+      }
+      if (user.username.toLocaleLowerCase() === username.toLocaleLowerCase()) {
+        result.username = true;
+      }
+    }
+
+    // use results to see if email if not unique, or username is not unique, or both
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 /**
@@ -212,6 +259,7 @@ async function verifyEmailAndUsernameAreUnique(email, username) {
  * @returns the new user's email and username
  */
 async function insertNewUser(email, username, hashedSaltedPassword) {
+  /*
   // create the query to store a new user into the database
   const query = {
     text: `INSERT INTO users (email, username, password) VALUES ($1, $2, $3)` +
@@ -226,6 +274,18 @@ async function insertNewUser(email, username, hashedSaltedPassword) {
   }
   catch (err) {
     console.error(err);
+  }*/
+
+  try {
+    const users = db.collection('users');
+    const newUser = { email, username, password: hashedSaltedPassword };
+
+    const result = await users.insertOne(newUser);
+    console.log(`Inserted new user with _ID: ${result.insertedId}`);
+    return newUser;
+  } catch (err) {
+    // log the error
+    console.error(err)
   }
 }
 
@@ -235,6 +295,7 @@ async function insertNewUser(email, username, hashedSaltedPassword) {
  * @returns the user's details, including hashed and salted password
  */
 async function selectUser(emailOrUsername) {
+  /*
   // create the query to find the account with the corresponding email or username
   const query = {
     text: `SELECT * FROM users WHERE LOWER(username) = LOWER($1)` +
@@ -252,6 +313,17 @@ async function selectUser(emailOrUsername) {
   catch (err) {
     console.error(err);
   }
+  */
+  try {
+    const users = db.collection('users');
+    const query = { email: { $regex: new RegExp(emailOrUsername, 'i') }, username: { $regex: new RegExp(emailOrUsername, 'i') } };
+
+    const user = await users.findOne(query);
+    return user;
+  } catch (err) {
+    // log the error
+    console.error(err)
+  }
 }
 
 /**
@@ -262,6 +334,7 @@ async function selectUser(emailOrUsername) {
  * @return the username and email of the user's updated password
  */
 async function updateUserPassword(currentUser, newHashedSaltedPassword) {
+  /*
   const query = {
     text: `UPDATE ONLY users`
         + ` SET password = $1`
@@ -279,6 +352,18 @@ async function updateUserPassword(currentUser, newHashedSaltedPassword) {
     }
   } catch (err) {
     console.error(error);
+  }
+  */
+
+  try {
+    const users = db.collection('users');
+    const filter = { email: currentUser?.email, username: currentUser?.username };
+    const updatedFields = { password: newHashedSaltedPassword };
+
+    await users.updateOne(filter, updatedFields);
+    return { email: currentUser?.email, username: currentUser?.username };
+  } catch (err) {
+    console.error(err);
   }
 }
 
