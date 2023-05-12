@@ -52,7 +52,7 @@ exports.getBlogPost = async (req, res) => {
     res.status(404).send();
     return;
   }
-  
+
   // if it was found and it doesn't have the 'public'/'unlisted' permissions setting, permissions need to be handled
   switch (blogPost.permissions) {
     case 'drafts': // same as private
@@ -78,7 +78,7 @@ exports.getBlogPost = async (req, res) => {
     default:
       break;
   }
-  
+
   // if this point was reached, then we can send the blogpost
   res.status(200).json(blogPost);
   return;
@@ -96,7 +96,7 @@ exports.getBlogPosts = async (req, res) => {
 
   // sort by date before providing the blogposts
   blogPosts_.sort((postA, postB) => {
-    return new Date(postB.updateddate) - new Date(postA.updateddate);
+    return new Date(postB.updatedDate) - new Date(postA.updatedDate);
   })
 
   // send the dummy data
@@ -127,8 +127,8 @@ exports.createBlogPost = async (req, res) => {
   newBlogPost.author = req.user.username;
   newBlogPost.title = title?title:'Untitled Post'; // Untitled Post is a default name
   newBlogPost.permissions = permissions?permissions:'public'; // public by default
-  newBlogPost.publishdate = new Date().toISOString();
-  newBlogPost.updateddate = newBlogPost.publishdate;
+  newBlogPost.publishDate = new Date().toISOString();
+  newBlogPost.updatedDate = newBlogPost.publishDate;
   // sanitize the content received from the client
   newBlogPost.content = sanitizeHtml(content, sanitizeHtmlOptions);
 
@@ -154,7 +154,7 @@ exports.updateExistingBlogPost = async (req, res) => {
 
   // Find the corresponding blog post in the database with the ID
   const blogPost = await db.selectOneBlogPost(id);
-  
+
   // If there is no blogpost, return a 404 status code
   if (blogPost == null) {
     res.status(404).send();
@@ -173,7 +173,7 @@ exports.updateExistingBlogPost = async (req, res) => {
   blogPost.title = (title !== undefined)?title:blogPost.title;
   blogPost.content = (content !== undefined)?sanitizeHtml(content, sanitizeHtmlOptions):blogPost.content;
   blogPost.permissions = (permissions !== undefined)?permissions:blogPost.permissions;
-  blogPost.updateddate = new Date().toISOString(); // set the updated date to be now
+  blogPost.updatedDate = new Date().toISOString(); // set the updated date to be now
   // update the item in the database
   const updatedBlogPost = await db.updateExistingBlogPost(blogPost);
   // if any errors occurred in updating, send an error response

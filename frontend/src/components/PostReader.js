@@ -96,16 +96,16 @@ export default function PostReader(props) {
   // PostReader date showing
   const showDates = () => {
     const publishDateComponent =
-        <h5 title={new Date(blogPost.publishdate).toLocaleString()}>
-          {"Published " + prettydate.format(new Date(blogPost.publishdate))}
+        <h5 title={new Date(blogPost.publishDate).toLocaleString()}>
+          {"Published " + prettydate.format(new Date(blogPost.publishDate))}
         </h5>;
     const updatedDateComponent =
-        <h5 title={new Date(blogPost.updateddate).toLocaleString()}>
-          {"Updated " + prettydate.format(new Date(blogPost.updateddate))}
+        <h5 title={new Date(blogPost.updatedDate).toLocaleString()}>
+          {"Updated " + prettydate.format(new Date(blogPost.updatedDate))}
         </h5>;
 
 
-    if (blogPost.publishdate === blogPost.updateddate) {
+    if (blogPost.publishDate === blogPost.updatedDate) {
       return publishDateComponent;
     } else {
       return (
@@ -121,7 +121,7 @@ export default function PostReader(props) {
   /**
    * takes the blog post and its properties and turns it into JSX
    * @param {object} blogPost the blogpost object with data
-   * @returns JSX 
+   * @returns JSX
    */
   const readerComponent = (blogPost) => (
     <div className={'postreader'}>

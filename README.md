@@ -1,6 +1,6 @@
 # Blog Full-Stack Web App
 
-This is a full-stack blogging web application using the PERN stack (PostgreSQL, Express.js, React, Node.js).
+This is a full-stack blogging web application using the MERN stack (MongoDB, Express.js, React, Node.js). This was originally built with PostgreSQL instead of MongoDB, but this project has been converted to use MongoDB. It is functionally identical. To see the PERN stack version, go to: https://github.com/Emman-B/blog-fs.
 
 ![main_view_mobile](https://user-images.githubusercontent.com/34151856/129804477-212523f3-1606-451c-b4b2-42ae2f82b8e3.png)
 
@@ -14,7 +14,7 @@ This is a full-stack blogging web application using the PERN stack (PostgreSQL, 
 - API Validation using OpenAPI Specification 3
 
 ## Releases
-See: https://github.com/Emman-B/blog-fs/releases for releases.
+See: https://github.com/Emman-B/blog-fs-mern/releases for releases.
 
 <details>
     <summary>Regarding a full production release</summary>
@@ -24,21 +24,26 @@ See: https://github.com/Emman-B/blog-fs/releases for releases.
 ## Usage
 ### Requirements
 The following requirements reflect what I used during the development of this app. Older versions may still be used, though it has not been tested.
-- PostgreSQL (v13.3)
-- Node (v14.15.0)
+- MongoDB (v6.0.5)
+- Node (v20.1.0)
 
 ### Installation
 
-First, install the above required software. For PostgreSQL, keep note of the database name, host, port, username, and password (I used the PostgreSQL Windows installer).
+First, install the above required software. For local hosting, I installed MongoDB Community Server and followed their corresponding setup. To run the database, you will need to run `mongod.exe` which will be in the MongoDB installation folder.
 
 Second, you need to create a `.env` file in the same directory as the `.env.example` file. I recommend copying the `.env.example` file and renaming it as `.env` and then replacing the values as needed.
 
 Then, using the terminal, run the command `npm install` in the `frontend/` and `backend/` directories. This installs the required packages.
 
 ### Running the web application
-In the `frontend/` and `backend/` directories, run the following: 
+In the `frontend/` and `backend/` directories, run the following:
 ```bash
 npm start
+```
+
+If running the command above does not work for the `frontend/`, you can run an alternative command:
+```bash
+npm run local
 ```
 
 By default, you access the frontend web application here:
@@ -51,9 +56,16 @@ To test the backend API, you can go to the following URL (after replacing `<PORT
 http://localhost:<PORT>/v1/api-docs/
 ```
 
+For setting up the database, you can run the following commands:
+
+```bash
+npm run dbsetup # This will set up the database
+npm run dbsetup -- [-d|--dummy] # This will insert dummy data into the database
+npm run dbsetup -- [--dangerous=clear] # This will completely clear the database's data.
+```
 
 ## What I Learned
-This was a large project to learn more about full stack web development. I learned about the PERN stack, as well as HTML and CSS, Authentication (with JWT), API validation, and security. I also learned about mobile-first design, as well as responsive web design.
+This was a large project to learn more about full stack web development. I learned about the MERN stack, as well as HTML and CSS, Authentication (with JWT), API validation, and security. I also learned about mobile-first design, as well as responsive web design.
 
 ## Screenshots
 <details>
