@@ -55,7 +55,6 @@ async function selectBlogPosts(currentUser, limit, page, specifiedAuthor) {
     console.error(err);
     return [];
   }
-
 }
 
 /**
@@ -64,24 +63,6 @@ async function selectBlogPosts(currentUser, limit, page, specifiedAuthor) {
  * @return blog post that was inserted
  */
 async function insertNewBlogPost({author, title, permissions, publishDate, updatedDate, content}) {
-  /*
-  // create the query for insertion, using the new blog post object
-  const query = {
-    text: `INSERT INTO blogposts (author, title, permissions, publishDate, updatedDate, content)` +
-      ` VALUES ($1, $2, $3, $4, $5, $6)` +
-      ` RETURNING *`, // return the new blog post that was just created
-    values: [ author, title, permissions, publishDate, updatedDate, content ],
-  };
-
-  try {
-    const {rows} = await pool.query(query);
-    return rows[0];
-  }
-  catch (err) {
-    // log the error
-    console.error(err);
-  }
-  */
   try {
     const blogposts = db.collection('blogposts');
     const newPost = { id: uuidv4(), author, title, permissions, publishDate, updatedDate, content };
@@ -102,24 +83,6 @@ async function insertNewBlogPost({author, title, permissions, publishDate, updat
  */
 async function updateExistingBlogPost(updatedBlogPost) {
   const {id, title, permissions, updatedDate, content} = updatedBlogPost;
-  /*
-  // create the query that makes use of the existing blog post UUID
-  const query = {
-    text: `UPDATE blogposts SET title = $2, permissions = $3, updatedDate = $4, content = $5` +
-      ` WHERE id = $1` +
-      ` RETURNING *;`,
-    values: [ id, title, permissions, updatedDate, content ],
-  }
-
-  try {
-    const {rows} = await pool.query(query);
-    // return the updated blogpost
-    return rows[0];
-  }
-  catch (err) {
-    console.error(err);
-  }
-  */
 
   try {
     const blogposts = db.collection('blogposts');
@@ -140,37 +103,6 @@ async function updateExistingBlogPost(updatedBlogPost) {
  * @returns true if deletion succeeded, false if deletion failed, undefined if an error occurred
  */
 async function deleteBlogPost(id, username) {
-  /*
-  // shared condition for selecting and deleting
-  const condition = `WHERE id = $1 AND LOWER(author) = LOWER($2)`;
-  // make the query to find the blog post before deletion
-  const selectQuery = {
-    text: `SELECT author FROM blogposts ` + condition,
-    values: [ id, username ],
-  };
-
-  // make the query to delete the blog post
-  const deleteQuery = {
-    text: `DELETE FROM blogposts ` + condition,
-    values: [ id, username ],
-  };
-
-  try {
-    // verify that the provided username contains a blogpost with the specified id
-    const {rows} = await pool.query(selectQuery);
-    if (rows.length > 0) {
-      // then, make the deletion
-      await pool.query(deleteQuery);
-      return true;
-    }
-    return false;
-  }
-  catch (err) {
-    console.error(err);
-    return undefined;
-  }
-  */
-
   try {
     const blogposts = db.collection('blogposts');
     const query = { id, author: { $regex: new RegExp(username, 'i') } };
@@ -195,35 +127,6 @@ async function deleteBlogPost(id, username) {
  * it indicates if either the email or username has been taken
  */
 async function verifyEmailAndUsernameAreUnique(email, username) {
-  /*
-  // create the query which checks the email and username columns
-  const query = {
-    text: `SELECT * FROM users WHERE LOWER(email) LIKE LOWER($1) OR LOWER(username) LIKE LOWER($2)`,
-    values: [ email, username ],
-  };
-
-  try {
-    const {rows} = await pool.query(query);
-    // if no results were found, then return an object indicating a unique email and username
-    if (rows.length === 0) {
-      return { unique: true };
-    }
-    // otherwise, check if either the email or username is not unique
-    const result = {};
-    for (const row of rows) {
-      if (row.username.toLowerCase() === username.toLowerCase()) {
-        result.username = true;
-      }
-      if (row.email.toLowerCase() === email.toLowerCase()) {
-        result.email = true;
-      }
-    }
-    return result;
-  }
-  catch (err) {
-    console.error(err);
-  }
-  */
   try {
     const users = db.collection('users');
     const query = { $or: [ { email: { $regex: new RegExp(email, 'i') } }, { username: { $regex: new RegExp(username, 'i') } } ] };
@@ -259,23 +162,6 @@ async function verifyEmailAndUsernameAreUnique(email, username) {
  * @returns the new user's email and username
  */
 async function insertNewUser(email, username, hashedSaltedPassword) {
-  /*
-  // create the query to store a new user into the database
-  const query = {
-    text: `INSERT INTO users (email, username, password) VALUES ($1, $2, $3)` +
-        ` RETURNING email, username;`,
-    values: [ email, username, hashedSaltedPassword ],
-  };
-
-  try {
-    const {rows} = await pool.query(query);
-    // return the email and username of the newly created user
-    return { email: rows[0].email, username: rows[0].username };
-  }
-  catch (err) {
-    console.error(err);
-  }*/
-
   try {
     const users = db.collection('users');
     const newUser = { email, username, password: hashedSaltedPassword };
@@ -295,25 +181,6 @@ async function insertNewUser(email, username, hashedSaltedPassword) {
  * @returns the user's details, including hashed and salted password
  */
 async function selectUser(emailOrUsername) {
-  /*
-  // create the query to find the account with the corresponding email or username
-  const query = {
-    text: `SELECT * FROM users WHERE LOWER(username) = LOWER($1)` +
-      ` OR LOWER(email) = LOWER($1);`,
-    values: [ emailOrUsername ],
-  };
-
-  try {
-    const {rows} = await pool.query(query);
-
-    if (rows.length === 1) {
-      return rows[0];
-    }
-  }
-  catch (err) {
-    console.error(err);
-  }
-  */
   try {
     const users = db.collection('users');
     const query = { email: { $regex: new RegExp(emailOrUsername, 'i') }, username: { $regex: new RegExp(emailOrUsername, 'i') } };
@@ -334,27 +201,6 @@ async function selectUser(emailOrUsername) {
  * @return the username and email of the user's updated password
  */
 async function updateUserPassword(currentUser, newHashedSaltedPassword) {
-  /*
-  const query = {
-    text: `UPDATE ONLY users`
-        + ` SET password = $1`
-        + ` WHERE username = $2 AND email = $3`
-        + ` RETURNING username, email`,
-    values: [ newHashedSaltedPassword, currentUser.username, currentUser.email ],
-  };
-
-  try {
-    const {rows} = await pool.query(query);
-
-    if (rows.length !== 0) {
-      const {username, email} = rows[0];
-      return {username, email};
-    }
-  } catch (err) {
-    console.error(error);
-  }
-  */
-
   try {
     const users = db.collection('users');
     const filter = { email: currentUser?.email, username: currentUser?.username };
