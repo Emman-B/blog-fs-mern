@@ -1,6 +1,6 @@
 # Blog Full-Stack Web App
 
-This is a full-stack blogging web application using the MERN stack (MongoDB, Express.js, React, Node.js). This was originally built with PostgreSQL instead of MongoDB, but this project has been converted to use MongoDB. It is functionally identical.
+This is a full-stack blogging web application using the MERN stack (MongoDB, Express.js, React, Node.js). This was originally built with PostgreSQL instead of MongoDB, but this project has been converted to use MongoDB. It is functionally identical. To see the PERN stack version, go to: https://github.com/Emman-B/blog-fs.
 
 ![main_view_mobile](https://user-images.githubusercontent.com/34151856/129804477-212523f3-1606-451c-b4b2-42ae2f82b8e3.png)
 
